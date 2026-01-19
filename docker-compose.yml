@@ -11,8 +11,10 @@ services:
       - db
     volumes:
       - ./server/prisma:/app/prisma
-    env_file:
-      - ./server/.env
+    secrets:
+      - db_url
+      - jwt_secret
+      - admin_secret
 
   db:
     image: postgres:latest
@@ -34,6 +36,14 @@ services:
       - "80:80"
     depends_on:
       - server
+
+secrets:
+  db_url:
+    file: ./secrets/db_url.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  admin_secret:
+    file: ./secrets/admin_secret.txt
 
 volumes:
   postgres_data:

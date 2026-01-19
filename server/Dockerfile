@@ -21,9 +21,11 @@ WORKDIR /app
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/docker-entrypoint.sh ./
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
 
-# We use a script or run migrations before starting
+# We use the entrypoint to load secrets before starting
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["sh", "-c", "npx prisma db push && npm start"]

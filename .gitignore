@@ -19,6 +19,9 @@ secrets/
 /server/dist
 /server/build
 
+# Deployment
+deployment/
+
 # IDE
 .vscode/
 .idea/

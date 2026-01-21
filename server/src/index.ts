@@ -13,12 +13,15 @@ let prisma: PrismaClient;
 const app = express();
 const port = 3000;
 
-let JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 let ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 // Initialize secrets and Prisma
 async function initSecrets() {
-    JWT_SECRET = await getSecret('jwt_secret', 'GCP_JWT_SECRET_NAME') || JWT_SECRET;
+    const jwtSecret = await getSecret('jwt_secret', 'GCP_JWT_SECRET_NAME');
+    if (jwtSecret) {
+        process.env.JWT_SECRET = jwtSecret;
+    }
+
     ADMIN_SECRET = await getSecret('admin_secret', 'GCP_ADMIN_SECRET_NAME') || ADMIN_SECRET;
 
     const dbUrl = await getSecret('db_url', 'GCP_DB_URL_NAME');
@@ -52,7 +55,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         const user = await prisma.user.create({
             data: { username, password: hashedPassword, role },
         });
-        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const token = jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '24h' });
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {
         console.error('Register error:', error);
@@ -70,7 +74,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
-        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const token = jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '24h' });
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {
         console.error('Login error:', error);

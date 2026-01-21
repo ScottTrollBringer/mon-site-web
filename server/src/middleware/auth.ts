@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export interface AuthRequest extends Request {
     userId?: number;
@@ -16,11 +15,13 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const decoded = jwt.verify(token, secret) as { userId: number; role: string };
         req.userId = decoded.userId;
         req.userRole = decoded.role;
         next();
     } catch (error) {
+        console.error('JWT Authentication Error:', error);
         return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
 };
@@ -32,7 +33,8 @@ export const optionalAuthenticate = (req: AuthRequest, res: Response, next: Next
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const decoded = jwt.verify(token, secret) as { userId: number; role: string };
         req.userId = decoded.userId;
         req.userRole = decoded.role;
         next();

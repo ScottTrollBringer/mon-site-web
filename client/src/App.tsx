@@ -226,6 +226,9 @@ export default function App() {
         if (res.ok) {
             setNewTodo('');
             fetchTodos();
+        } else {
+            const error = await res.json();
+            alert(`Erreur d'ajout: ${error.error || 'Erreur inconnue'}`);
         }
     };
 

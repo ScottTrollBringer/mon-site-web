@@ -21,6 +21,7 @@ secrets/
 
 # Deployment
 deployment/
+docker-compose.override.yml
 
 # IDE
 .vscode/

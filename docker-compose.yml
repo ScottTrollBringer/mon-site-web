@@ -3,8 +3,8 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/todolist?schema=public
     depends_on:
@@ -32,8 +32,8 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
+    # ports:
+    #   - "80:80"
     depends_on:
       - server
 

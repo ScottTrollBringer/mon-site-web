@@ -9,14 +9,14 @@ import { getSecret } from './utils/secrets';
 
 dotenv.config();
 
-const prisma = new PrismaClient();
+let prisma: PrismaClient;
 const app = express();
 const port = 3000;
 
 let JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 let ADMIN_SECRET = process.env.ADMIN_SECRET;
 
-// Initialize secrets
+// Initialize secrets and Prisma
 async function initSecrets() {
     JWT_SECRET = await getSecret('jwt_secret', 'GCP_JWT_SECRET_NAME') || JWT_SECRET;
     ADMIN_SECRET = await getSecret('admin_secret', 'GCP_ADMIN_SECRET_NAME') || ADMIN_SECRET;
@@ -28,6 +28,9 @@ async function initSecrets() {
         // but since we are at the top level and using process.env, it should pick it up
         // if we haven't made any queries yet.
     }
+
+    // Initialize Prisma after setting DATABASE_URL
+    prisma = new PrismaClient();
 }
 
 app.use(cors());

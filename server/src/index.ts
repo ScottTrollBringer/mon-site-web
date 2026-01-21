@@ -5,13 +5,30 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
+import { getSecret } from './utils/secrets';
 
 dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
 const port = 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+let JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+let ADMIN_SECRET = process.env.ADMIN_SECRET;
+
+// Initialize secrets
+async function initSecrets() {
+    JWT_SECRET = await getSecret('jwt_secret', 'GCP_JWT_SECRET_NAME') || JWT_SECRET;
+    ADMIN_SECRET = await getSecret('admin_secret', 'GCP_ADMIN_SECRET_NAME') || ADMIN_SECRET;
+
+    const dbUrl = await getSecret('db_url', 'GCP_DB_URL_NAME');
+    if (dbUrl) {
+        process.env.DATABASE_URL = dbUrl;
+        // Note: Prisma might need to be re-initialized if DATABASE_URL changes after creation
+        // but since we are at the top level and using process.env, it should pick it up
+        // if we haven't made any queries yet.
+    }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -25,10 +42,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         console.log('Registration attempt:', { username, secretCodeProvided: secretCode });
-        const adminSecret = process.env.ADMIN_SECRET;
-        console.log('Comparing with ADMIN_SECRET:', adminSecret ? 'Value exists' : 'MISSING');
 
-        const role = secretCode === adminSecret ? 'admin' : 'user';
+        const role = secretCode === ADMIN_SECRET ? 'admin' : 'user';
         console.log('Assigned role:', role);
 
         const user = await prisma.user.create({
@@ -247,6 +262,8 @@ app.delete('/api/videogames/:id', authenticate, isAdmin, async (req: AuthRequest
     }
 });
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running at http://0.0.0.0:${port}`);
+initSecrets().then(() => {
+    app.listen(port, '0.0.0.0', () => {
+        console.log(`Server running at http://0.0.0.0:${port}`);
+    });
 });

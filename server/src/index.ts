@@ -33,7 +33,14 @@ async function initSecrets() {
     }
 
     // Initialize Prisma after setting DATABASE_URL
-    prisma = new PrismaClient();
+    console.log('Initializing Prisma Client...');
+    try {
+        prisma = new PrismaClient();
+        console.log('Prisma Client initialized.');
+    } catch (e) {
+        console.error('CRITICAL: Failed to initialize Prisma Client:', e);
+        throw e;
+    }
 }
 
 app.use(cors());

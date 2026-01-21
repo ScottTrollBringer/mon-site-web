@@ -91,9 +91,9 @@ const isAdmin = (req: AuthRequest, res: Response, next: express.NextFunction) =>
     next();
 };
 
-// Apply optional auth to GET routes, strict auth to others
+// Apply auth to GET routes, strict auth to others
 // Get all todos sorted by position
-app.get('/api/todos', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+app.get('/api/todos', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
     try {
         // If user, get only admin's todos. If admin, get their own.
         const targetUserId = req.userRole === 'admin' ? req.userId : (await prisma.user.findFirst({ where: { role: 'admin' } }))?.id;

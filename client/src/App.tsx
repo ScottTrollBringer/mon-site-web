@@ -146,7 +146,15 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames'>('todos');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames'>(() => {
+        const saved = localStorage.getItem('auth');
+        try {
+            const parsed = saved ? JSON.parse(saved) : null;
+            return parsed?.user?.role === 'admin' ? 'todos' : 'videogames';
+        } catch {
+            return 'videogames';
+        }
+    });
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -168,8 +176,13 @@ export default function App() {
 
     useEffect(() => {
         console.log('Auth state changed:', auth ? `Logged in as ${auth.user.username}` : 'Logged out');
-        fetchTodos();
-    }, [auth]);
+        if (isAdmin) {
+            fetchTodos();
+        } else {
+            setCurrentView('videogames');
+            setTodos([]);
+        }
+    }, [auth, isAdmin]);
 
     useEffect(() => {
         console.log('showAuth changed:', showAuth);
@@ -324,12 +337,14 @@ export default function App() {
             <h1>Praetor Scott</h1>
 
             <div className="nav-tabs">
-                <button
-                    className={`nav-btn ${currentView === 'todos' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('todos')}
-                >
-                    Tâches
-                </button>
+                {isAdmin && (
+                    <button
+                        className={`nav-btn ${currentView === 'todos' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('todos')}
+                    >
+                        Tâches
+                    </button>
+                )}
                 <button
                     className={`nav-btn ${currentView === 'videogames' ? 'active' : ''}`}
                     onClick={() => setCurrentView('videogames')}

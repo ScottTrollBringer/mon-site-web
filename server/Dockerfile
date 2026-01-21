@@ -27,5 +27,4 @@ RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 3000
 
 # We use the entrypoint to load secrets before starting
-ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["npm", "start"]

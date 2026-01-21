@@ -10,6 +10,8 @@ import { execSync } from 'child_process';
 
 dotenv.config();
 
+console.log('[DEBUG] Environment Variables Keys:', Object.keys(process.env).sort());
+
 let prisma: PrismaClient;
 const app = express();
 const port = 3000;

@@ -55,7 +55,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         const user = await prisma.user.create({
             data: { username, password: hashedPassword, role },
         });
-        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not defined');
         const token = jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '24h' });
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {
@@ -74,7 +75,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
-        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not defined');
         const token = jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '24h' });
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {

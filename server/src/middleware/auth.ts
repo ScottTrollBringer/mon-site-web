@@ -15,7 +15,8 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
     const token = authHeader.split(' ')[1];
     try {
-        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not defined');
         const decoded = jwt.verify(token, secret) as { userId: number; role: string };
         req.userId = decoded.userId;
         req.userRole = decoded.role;

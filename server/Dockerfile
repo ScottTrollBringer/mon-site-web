@@ -28,4 +28,4 @@ EXPOSE 3000
 
 # We use the entrypoint to load secrets before starting
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["sh", "-c", "npx prisma db push && npm start"]
+CMD ["npm", "start"]

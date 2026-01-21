@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
 import { getSecret } from './utils/secrets';
+import { execSync } from 'child_process';
 
 dotenv.config();
 
@@ -27,12 +28,21 @@ async function initSecrets() {
     const dbUrl = await getSecret('db_url', 'GCP_DB_URL_NAME');
     if (dbUrl) {
         process.env.DATABASE_URL = dbUrl;
-        // Note: Prisma might need to be re-initialized if DATABASE_URL changes after creation
-        // but since we are at the top level and using process.env, it should pick it up
-        // if we haven't made any queries yet.
     }
 
-    // Initialize Prisma after setting DATABASE_URL
+    // Run Prisma migrations after setting DATABASE_URL
+    console.log('Running Prisma Migrations...');
+    try {
+        execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+        console.log('Prisma Migrations completed.');
+    } catch (error) {
+        console.error('CRITICAL: Failed to run Prisma migrations:', error);
+        // We continue? Or throw? If migrations fail, DB might be unusable.
+        // Let's throw to be safe/fail fast.
+        throw error;
+    }
+
+    // Initialize Prisma Client
     console.log('Initializing Prisma Client...');
     try {
         prisma = new PrismaClient();

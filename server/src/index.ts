@@ -5,6 +5,9 @@ import { PrismaClient } from '@prisma/client';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
 import { getSecret } from './utils/secrets';
 import { execSync } from 'child_process';
@@ -57,6 +60,39 @@ async function initSecrets() {
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Multer configuration for blog image uploads
+// Multer configuration for blog image uploads
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads/blog');
+if (!fs.existsSync(UPLOADS_DIR)) {
+    console.log(`Creating uploads directory at: ${UPLOADS_DIR}`);
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+} else {
+    console.log(`Uploads directory exists at: ${UPLOADS_DIR}`);
+}
+
+const storage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+    fileFilter: (_req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.dirname(UPLOADS_DIR)));
 
 // Auth Endpoints
 app.post('/api/auth/register', async (req: Request, res: Response) => {
@@ -288,6 +324,182 @@ app.delete('/api/videogames/:id', authenticate, isAdmin, async (req: AuthRequest
     } catch (error) {
         console.error('Delete game error:', error);
         res.status(404).json({ error: 'Video game not found' });
+    }
+});
+
+// Blog Endpoints
+// Get all blog posts with pagination
+app.get('/api/blog', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 5;
+        const skip = (page - 1) * limit;
+
+        const [posts, total] = await Promise.all([
+            prisma.blogPost.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: { images: true, author: { select: { username: true } } }
+            }),
+            prisma.blogPost.count()
+        ]);
+
+        res.json({
+            posts,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Fetch blog posts error:', error);
+        res.status(500).json({ error: 'Failed to fetch blog posts' });
+    }
+});
+
+// Get single blog post
+app.get('/api/blog/:id', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const post = await prisma.blogPost.findUnique({
+            where: { id: parseInt(String(id)) },
+            include: { images: true, author: { select: { username: true } } }
+        });
+        if (!post) {
+            return res.status(404).json({ error: 'Blog post not found' });
+        }
+        res.json(post);
+    } catch (error) {
+        console.error('Fetch blog post error:', error);
+        res.status(500).json({ error: 'Failed to fetch blog post' });
+    }
+});
+
+// Create blog post (admin only)
+app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
+    const { title, content } = req.body;
+    if (!title || !content) {
+        return res.status(400).json({ error: 'Title and content are required' });
+    }
+    try {
+        const files = req.files as Express.Multer.File[];
+        const post = await prisma.blogPost.create({
+            data: {
+                title,
+                content,
+                authorId: req.userId!,
+                images: {
+                    create: files?.map(file => ({ filename: file.filename })) || []
+                }
+            },
+            include: { images: true }
+        });
+        res.json(post);
+    } catch (error) {
+        console.error('Create blog post error:', error);
+        res.status(500).json({ error: 'Failed to create blog post' });
+    }
+});
+
+// Update blog post (admin only)
+app.put('/api/blog/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { title, content } = req.body;
+    try {
+        const post = await prisma.blogPost.update({
+            where: { id: parseInt(String(id)) },
+            data: { title, content },
+            include: { images: true }
+        });
+        res.json(post);
+    } catch (error) {
+        console.error('Update blog post error:', error);
+        res.status(404).json({ error: 'Blog post not found' });
+    }
+});
+
+// Delete blog post (admin only)
+app.delete('/api/blog/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        // Get images to delete from disk
+        const post = await prisma.blogPost.findUnique({
+            where: { id: parseInt(String(id)) },
+            include: { images: true }
+        });
+        if (!post) {
+            return res.status(404).json({ error: 'Blog post not found' });
+        }
+
+        // Delete images from disk
+        for (const image of post.images) {
+            const filePath = path.join(UPLOADS_DIR, image.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        // Delete post (cascade deletes images in DB)
+        await prisma.blogPost.delete({ where: { id: parseInt(String(id)) } });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Delete blog post error:', error);
+        res.status(500).json({ error: 'Failed to delete blog post' });
+    }
+});
+
+// Upload images to existing blog post (admin only)
+app.post('/api/blog/:id/images', authenticate, isAdmin, upload.array('images', 10), async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const files = req.files as Express.Multer.File[];
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'No images provided' });
+        }
+
+        const images = await prisma.blogImage.createMany({
+            data: files.map(file => ({
+                filename: file.filename,
+                blogPostId: parseInt(String(id))
+            }))
+        });
+
+        const updatedPost = await prisma.blogPost.findUnique({
+            where: { id: parseInt(String(id)) },
+            include: { images: true }
+        });
+
+        res.json(updatedPost);
+    } catch (error) {
+        console.error('Upload images error:', error);
+        res.status(500).json({ error: 'Failed to upload images' });
+    }
+});
+
+// Delete single image (admin only)
+app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { imageId } = req.params;
+    try {
+        const image = await prisma.blogImage.findUnique({ where: { id: parseInt(String(imageId)) } });
+        if (!image) {
+            return res.status(404).json({ error: 'Image not found' });
+        }
+
+        // Delete from disk
+        const filePath = path.join(UPLOADS_DIR, image.filename);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Delete from DB
+        await prisma.blogImage.delete({ where: { id: parseInt(String(imageId)) } });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Delete image error:', error);
+        res.status(500).json({ error: 'Failed to delete image' });
     }
 });
 

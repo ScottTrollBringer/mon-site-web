@@ -33,6 +33,25 @@ export async function getSecret(secretName: string, envVarName?: string): Promis
         return fs.readFileSync(dockerSecretPath, 'utf8').trim();
     }
 
+    // 2.5. Try to load from Local Secrets (../secrets/...) for local dev without Docker
+    // Try both with and without .txt extension
+    const localSecretPossiblePaths = [
+        path.join(__dirname, '../../../secrets', secretName),
+        path.join(__dirname, '../../../secrets', `${secretName}.txt`)
+    ];
+
+    for (const localPath of localSecretPossiblePaths) {
+        if (fs.existsSync(localPath)) {
+            console.log(`Loaded secret ${secretName} from Local Secrets: ${localPath}`);
+            let val = fs.readFileSync(localPath, 'utf8').trim();
+            if (secretName === 'db_url' && val.includes('@db:')) {
+                console.log('Replacing @db: with @localhost: for local development compatibility.');
+                val = val.replace('@db:', '@localhost:');
+            }
+            return val;
+        }
+    }
+
     // 3. Fallback to environment variable
     const envValue = process.env[secretName.toUpperCase()];
     if (envValue) {

@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import VideoGames from './VideoGames';
+import Blog from './Blog';
 import Auth from './Auth';
 
 interface Todo {
@@ -146,15 +147,8 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames'>(() => {
-        const saved = localStorage.getItem('auth');
-        try {
-            const parsed = saved ? JSON.parse(saved) : null;
-            return parsed?.user?.role === 'admin' ? 'todos' : 'videogames';
-        } catch {
-            return 'videogames';
-        }
-    });
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog'>('blog');
+
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -179,7 +173,7 @@ export default function App() {
         if (isAdmin) {
             fetchTodos();
         } else {
-            setCurrentView('videogames');
+            setCurrentView('blog');
             setTodos([]);
         }
     }, [auth, isAdmin]);
@@ -337,6 +331,12 @@ export default function App() {
             <h1>Praetor Scott</h1>
 
             <div className="nav-tabs">
+                <button
+                    className={`nav-btn ${currentView === 'blog' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('blog')}
+                >
+                    Blog
+                </button>
                 {isAdmin && (
                     <button
                         className={`nav-btn ${currentView === 'todos' ? 'active' : ''}`}
@@ -402,8 +402,10 @@ export default function App() {
                         </p>
                     )}
                 </>
-            ) : (
+            ) : currentView === 'videogames' ? (
                 <VideoGames authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
+            ) : (
+                <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}
         </div>
     );

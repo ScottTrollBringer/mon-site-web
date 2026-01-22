@@ -11,6 +11,7 @@ services:
       - db
     volumes:
       - ./server/prisma:/app/prisma
+      - blog_uploads:/app/uploads
 
   db:
     image: postgres:16-alpine
@@ -35,3 +36,4 @@ services:
 
 volumes:
   postgres_data:
+  blog_uploads:

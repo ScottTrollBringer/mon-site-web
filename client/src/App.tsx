@@ -131,6 +131,13 @@ function SortableItem({
 }
 
 export default function App() {
+    // Gestion du routage par slug pour le blog (navigation directe)
+    useEffect(() => {
+        if (window.location.pathname.startsWith('/blog/')) {
+            // Force l'affichage du blog si on accède à /blog/:slug
+            setCurrentView('blog');
+        }
+    }, []);
     const [auth, setAuth] = useState<{ token: string; user: { id: number; username: string; role: string } } | null>(() => {
         const saved = localStorage.getItem('auth');
         try {

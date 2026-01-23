@@ -46,6 +46,7 @@ model VideoGame {
 model BlogPost {
   id        Int         @id @default(autoincrement())
   title     String
+  slug      String      @unique
   content   String
   images    BlogImage[]
   createdAt DateTime    @default(now())

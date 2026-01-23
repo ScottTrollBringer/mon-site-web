@@ -9,6 +9,7 @@ interface BlogImage {
 interface BlogPost {
     id: number;
     title: string;
+    slug: string;
     content: string;
     images: BlogImage[];
     createdAt: string;
@@ -34,6 +35,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
         page: 1, limit: 5, total: 0, totalPages: 0
     });
     const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+    const [slugView, setSlugView] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ title: '', content: '' });
@@ -45,8 +47,33 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
     const isAdmin = userRole === 'admin';
 
     useEffect(() => {
-        fetchPosts();
-    }, [pagination.page]);
+        if (slugView) {
+            fetchPostBySlug(slugView);
+        } else {
+            fetchPosts();
+        }
+    }, [pagination.page, slugView]);
+
+    // Permet la navigation directe par slug (pour App)
+    useEffect(() => {
+        if (window.location.pathname.startsWith('/blog/')) {
+            const slug = window.location.pathname.replace('/blog/', '');
+            if (slug) setSlugView(slug);
+        }
+    }, []);
+    const fetchPostBySlug = async (slug: string) => {
+        try {
+            const res = await fetchWithAuth(`/api/blog/slug/${slug}`);
+            if (res.ok) {
+                const post = await res.json();
+                setSelectedPost(post);
+            } else {
+                setSelectedPost(null);
+            }
+        } catch (error) {
+            setSelectedPost(null);
+        }
+    };
 
     // Handle ESC key to close lightbox
     useEffect(() => {
@@ -122,15 +149,23 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
             console.log('Response status:', res.status);
 
             if (res.ok) {
+                const newPost = await res.json();
+                console.log('Post created:', newPost);
+                
+                // Reset form
                 setFormData({ title: '', content: '' });
                 setSelectedFiles([]);
-                await fetchPosts();
                 setIsCreating(false);
+                setSlugView(null);
+                setSelectedPost(null);
+
                 alert('Article publié avec succès !');
+                window.history.pushState({}, '', '/blog');
+                await fetchPosts();
             } else {
                 const error = await res.json();
                 console.error('Server error:', error);
-                alert(`Erreur de création: ${error.error || 'Erreur inconnue'}`);
+                alert(`Erreur de création: ${error.error}${error.details ? `\nDétails: ${error.details}` : ''}`);
             }
         } catch (error: any) {
             console.error('Failed to create post:', error);
@@ -233,12 +268,15 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                     <button className="back-btn" onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPost(null);
+                        setSlugView(null);
                         setFullscreenImage(null);
+                        window.history.pushState({}, '', '/');
                     }}>
                         ← Retour aux articles
                     </button>
                     <article className="blog-full">
                         <h2 className="blog-full-title">{selectedPost.title}</h2>
+                        <div style={{ fontSize: '0.9em', color: '#888' }}>URL : /blog/{selectedPost.slug}</div>
                         <div className="blog-meta">
                             <span className="badge badge-date">{formatDate(selectedPost.createdAt)}</span>
                             <span className="badge badge-author">Par {selectedPost.author.username}</span>
@@ -377,6 +415,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                         <button type="submit" className="add-btn">Publier</button>
                     </form>
                 </>
+
             ) : (
                 <>
                     {isAdmin && (
@@ -390,7 +429,12 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                             <article key={post.id} className="blog-card">
                                 <h3
                                     className="blog-title"
-                                    onClick={() => setSelectedPost(post)}
+                                    onClick={() => {
+                                        setSelectedPost(post);
+                                        setSlugView(post.slug);
+                                        window.history.pushState({}, '', `/blog/${post.slug}`);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     {post.title}
                                 </h3>

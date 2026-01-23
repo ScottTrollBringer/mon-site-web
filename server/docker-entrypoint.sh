@@ -19,5 +19,10 @@ load_secret "db_url" "DATABASE_URL"
 load_secret "jwt_secret" "JWT_SECRET"
 load_secret "admin_secret" "ADMIN_SECRET"
 
-# Execute the CMD passed to the entrypoint
-exec "$@"
+# Fix permissions for uploads directory
+echo "Fixing permissions for /app/uploads..."
+chown -R appuser:appgroup /app/uploads
+
+# Execute the CMD passed to the entrypoint as appuser
+echo "Starting application as appuser..."
+exec su-exec appuser "$@"

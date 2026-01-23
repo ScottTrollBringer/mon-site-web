@@ -1,3 +1,15 @@
+// Utilitaire pour générer un slug unique à partir d'un titre
+function slugify(str: string): string {
+    return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // retire les accents
+        .replace(/[^a-zA-Z0-9\s-]/g, '') // retire caractères spéciaux
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+}
+
 import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import helmet from 'helmet';
@@ -360,7 +372,25 @@ app.get('/api/blog', optionalAuthenticate, async (req: AuthRequest, res: Respons
     }
 });
 
-// Get single blog post
+// Get single blog post by slug
+app.get('/api/blog/slug/:slug', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    const { slug } = req.params;
+    try {
+        const post = await prisma.blogPost.findUnique({
+            where: { slug: String(slug) },
+            include: { images: true, author: { select: { username: true } } }
+        });
+        if (!post) {
+            return res.status(404).json({ error: 'Blog post not found' });
+        }
+        res.json(post);
+    } catch (error) {
+        console.error('Fetch blog post by slug error:', error);
+        res.status(500).json({ error: 'Failed to fetch blog post' });
+    }
+});
+
+// Get single blog post by ID (legacy/admin)
 app.get('/api/blog/:id', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     try {
@@ -386,9 +416,21 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
     }
     try {
         const files = req.files as Express.Multer.File[];
+        let baseSlug = slugify(title);
+        if (!baseSlug) {
+            // Fallback si le titre ne contient que des caractères spéciaux
+            baseSlug = `article-${Date.now()}`;
+        }
+        let slug = baseSlug;
+        let suffix = 1;
+        // Vérifie l'unicité du slug
+        while (await prisma.blogPost.findUnique({ where: { slug } })) {
+            slug = `${baseSlug}-${suffix++}`;
+        }
         const post = await prisma.blogPost.create({
             data: {
                 title,
+                slug,
                 content,
                 authorId: req.userId!,
                 images: {
@@ -400,14 +442,17 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
         res.json(post);
     } catch (error) {
         console.error('Create blog post error:', error);
-        res.status(500).json({ error: 'Failed to create blog post' });
+        res.status(500).json({ error: 'Failed to create blog post', details: error instanceof Error ? error.message : String(error) });
     }
 });
 
 // Update blog post (admin only)
 app.put('/api/blog/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const { title, content } = req.body;
+    const { title, content, slug, ...rest } = req.body;
+    if (slug !== undefined) {
+        return res.status(400).json({ error: 'Slug cannot be modified' });
+    }
     try {
         const post = await prisma.blogPost.update({
             where: { id: parseInt(String(id)) },

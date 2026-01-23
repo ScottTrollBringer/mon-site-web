@@ -32,6 +32,7 @@ services:
     depends_on:
       - server
 
+
 volumes:
   postgres_data:
   blog_uploads:

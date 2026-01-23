@@ -436,6 +436,11 @@ app.delete('/api/blog/:id', authenticate, isAdmin, async (req: AuthRequest, res:
 
         // Delete images from disk
         for (const image of post.images) {
+            // Path traversal protection
+            if (image.filename.includes('..') || path.isAbsolute(image.filename) || image.filename.includes('/') || image.filename.includes('\\')) {
+                console.warn(`Tentative de path traversal détectée pour le fichier: ${image.filename}`);
+                continue;
+            }
             const filePath = path.join(UPLOADS_DIR, image.filename);
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
@@ -489,9 +494,14 @@ app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthR
         }
 
         // Delete from disk
-        const filePath = path.join(UPLOADS_DIR, image.filename);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+        // Path traversal protection
+        if (image.filename.includes('..') || path.isAbsolute(image.filename) || image.filename.includes('/') || image.filename.includes('\\')) {
+            console.warn(`Tentative de path traversal détectée pour le fichier: ${image.filename}`);
+        } else {
+            const filePath = path.join(UPLOADS_DIR, image.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
         }
 
         // Delete from DB

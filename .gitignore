@@ -41,3 +41,5 @@ __pycache__/
 
 # Docker
 .docker/
+
+ANALYSE_TECHNIQUE.md 

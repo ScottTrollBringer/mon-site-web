@@ -18,18 +18,18 @@ export async function getSecret(secretName: string, envVarName?: string): Promis
             const [version] = await client.accessSecretVersion({ name });
             const payload = version.payload?.data?.toString();
             if (payload) {
-                console.log(`Loaded secret ${secretName} from GCP Secret Manager.`);
+                console.log('Loaded secret from GCP Secret Manager:', { secretName });
                 return payload;
             }
         } catch (error) {
-            console.error(`Error loading secret ${secretName} from GCP:`, error);
+            console.error('Error loading secret from GCP:', { secretName, error });
         }
     }
 
     // 2. Try to load from Docker Secrets (/run/secrets/...)
     const dockerSecretPath = path.join('/run/secrets', secretName);
     if (fs.existsSync(dockerSecretPath)) {
-        console.log(`Loaded secret ${secretName} from Docker Secrets.`);
+        console.log('Loaded secret from Docker Secrets:', { secretName });
         return fs.readFileSync(dockerSecretPath, 'utf8').trim();
     }
 
@@ -42,7 +42,7 @@ export async function getSecret(secretName: string, envVarName?: string): Promis
 
     for (const localPath of localSecretPossiblePaths) {
         if (fs.existsSync(localPath)) {
-            console.log(`Loaded secret ${secretName} from Local Secrets: ${localPath}`);
+            console.log('Loaded secret from Local Secrets:', { secretName, localPath });
             let val = fs.readFileSync(localPath, 'utf8').trim();
             if (secretName === 'db_url' && val.includes('@db:')) {
                 console.log('Replacing @db: with @localhost: for local development compatibility.');
@@ -55,10 +55,10 @@ export async function getSecret(secretName: string, envVarName?: string): Promis
     // 3. Fallback to environment variable
     const envValue = process.env[secretName.toUpperCase()];
     if (envValue) {
-        console.log(`Loaded secret ${secretName} from Environment Variable.`);
+        console.log('Loaded secret from Environment Variable:', { secretName });
         return envValue;
     }
 
-    console.warn(`Secret ${secretName} not found in GCP, Docker, or Environment.`);
+    console.warn('Secret not found in GCP, Docker, or Environment:', { secretName });
     return '';
 }

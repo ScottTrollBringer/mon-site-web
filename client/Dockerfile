@@ -19,6 +19,11 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Optional: Add a custom nginx config if needed for SPA routing
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+
+# Ajout d'un utilisateur non-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

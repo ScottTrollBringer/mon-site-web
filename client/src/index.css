@@ -1,8 +1,4 @@
 :root {
-  .cache-buster-v5 {
-    content: 'v5';
-  }
-
   --primary: #ef4444;
   --primary-hover: #dc2626;
   --bg: #020617;

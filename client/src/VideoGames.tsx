@@ -34,7 +34,8 @@ interface VideoGamesProps {
 
 const MONTHS = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    'To be defined'
 ];
 
 interface SortableGameProps {

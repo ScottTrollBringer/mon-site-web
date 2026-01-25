@@ -55,10 +55,21 @@ model BlogPost {
   author    User        @relation(fields: [authorId], references: [id])
 }
 
+
 model BlogImage {
   id         Int      @id @default(autoincrement())
   filename   String
   blogPostId Int
   blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
+}
+
+model Photo {
+  id        Int      @id @default(autoincrement())
+  name      String
+  tag       String
+  filename  String
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
 }

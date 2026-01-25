@@ -18,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import VideoGames from './VideoGames';
 import Blog from './Blog';
+import Gallery from './Gallery';
 import Auth from './Auth';
 
 interface Todo {
@@ -154,7 +155,7 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog'>('blog');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery'>('blog');
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
@@ -358,6 +359,12 @@ export default function App() {
                 >
                     Jeux Vidéo
                 </button>
+                <button
+                    className={`nav-btn ${currentView === 'gallery' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('gallery')}
+                >
+                    Galerie
+                </button>
             </div>
 
             {currentView === 'todos' ? (
@@ -411,6 +418,8 @@ export default function App() {
                 </>
             ) : currentView === 'videogames' ? (
                 <VideoGames authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
+            ) : currentView === 'gallery' ? (
+                <Gallery authToken={auth?.token || ''} userRole={auth?.user?.role || 'user'} />
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}

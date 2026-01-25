@@ -22,6 +22,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
 import { getSecret } from './utils/secrets';
+import { uploadPhoto, getPhotos } from './controllers/photoController';
 import { execSync } from 'child_process';
 
 dotenv.config();
@@ -102,6 +103,34 @@ const upload = multer({
         }
     }
 });
+
+// Multer config for Gallery
+const GALLERY_DIR = path.join(__dirname, '../uploads/gallery');
+if (!fs.existsSync(GALLERY_DIR)) {
+    console.log(`Creating gallery directory at: ${GALLERY_DIR}`);
+    fs.mkdirSync(GALLERY_DIR, { recursive: true });
+}
+
+const galleryStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, GALLERY_DIR), // Temporarily save here, controller converts and deletes
+    filename: (_req, file, cb) => cb(null, `temp-${Date.now()}-${file.originalname}`)
+});
+
+const galleryUpload = multer({
+    storage: galleryStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for high res photos
+    fileFilter: (_req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp|avif/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.dirname(UPLOADS_DIR)));
@@ -429,7 +458,7 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
         while (await prisma.blogPost.findUnique({ where: { slug } })) {
             slug = `${baseSlug}-${suffix++}`;
         }
-        
+
         console.log('Generated slug:', slug);
 
         const post = await prisma.blogPost.create({
@@ -449,9 +478,9 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
     } catch (error) {
         console.error('Create blog post error FULL OBJECT:', JSON.stringify(error, null, 2));
         console.error('Create blog post error stack:', error instanceof Error ? error.stack : 'No stack');
-        
-        res.status(500).json({ 
-            error: 'Failed to create blog post', 
+
+        res.status(500).json({
+            error: 'Failed to create blog post',
             details: error instanceof Error ? error.message : String(error),
             stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
         });
@@ -569,6 +598,10 @@ app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthR
         res.status(500).json({ error: 'Failed to delete image' });
     }
 });
+
+// Gallery Endpoints
+app.get('/api/photos', optionalAuthenticate, getPhotos);
+app.post('/api/photos', authenticate, isAdmin, galleryUpload.single('photo'), uploadPhoto);
 
 initSecrets().then(() => {
     app.listen(port, '0.0.0.0', () => {

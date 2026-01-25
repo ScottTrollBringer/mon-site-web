@@ -416,6 +416,8 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
     }
     try {
         const files = req.files as Express.Multer.File[];
+        console.log('Creating blog post:', { title, userId: req.userId, filesCount: files?.length });
+
         let baseSlug = slugify(title);
         if (!baseSlug) {
             // Fallback si le titre ne contient que des caractères spéciaux
@@ -427,6 +429,9 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
         while (await prisma.blogPost.findUnique({ where: { slug } })) {
             slug = `${baseSlug}-${suffix++}`;
         }
+        
+        console.log('Generated slug:', slug);
+
         const post = await prisma.blogPost.create({
             data: {
                 title,
@@ -439,10 +444,17 @@ app.post('/api/blog', authenticate, isAdmin, upload.array('images', 10), async (
             },
             include: { images: true }
         });
+        console.log('Blog post created successfully:', post.id);
         res.json(post);
     } catch (error) {
-        console.error('Create blog post error:', error);
-        res.status(500).json({ error: 'Failed to create blog post', details: error instanceof Error ? error.message : String(error) });
+        console.error('Create blog post error FULL OBJECT:', JSON.stringify(error, null, 2));
+        console.error('Create blog post error stack:', error instanceof Error ? error.stack : 'No stack');
+        
+        res.status(500).json({ 
+            error: 'Failed to create blog post', 
+            details: error instanceof Error ? error.message : String(error),
+            stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+        });
     }
 });
 

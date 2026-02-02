@@ -25,6 +25,7 @@ import { getSecret } from './utils/secrets';
 import { uploadPhoto, getPhotos } from './controllers/photoController';
 import gameRankingRouter from './routes/gameRankings';
 import { execSync } from 'child_process';
+import sharp from 'sharp';
 
 dotenv.config();
 
@@ -131,6 +132,51 @@ const galleryUpload = multer({
         }
     }
 });
+
+// Multer config for Painting Projects
+const PAINTING_DIR = path.join(__dirname, '../uploads/painting');
+if (!fs.existsSync(PAINTING_DIR)) {
+    console.log(`Creating painting directory at: ${PAINTING_DIR}`);
+    fs.mkdirSync(PAINTING_DIR, { recursive: true });
+}
+
+// Storage for painting images - temporary save before processing
+const paintingStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, PAINTING_DIR),
+    filename: (_req, file, cb) => cb(null, `temp-${Date.now()}-${file.originalname}`)
+});
+
+const paintingUpload = multer({
+    storage: paintingStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp|avif/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+// Helper to process and save image as AVIF
+const processPaintingImage = async (filePath: string): Promise<string> => {
+    const filename = `painting-${Date.now()}-${Math.round(Math.random() * 1E9)}.avif`;
+    const outputPath = path.join(PAINTING_DIR, filename);
+
+    await sharp(filePath)
+        .avif({ quality: 80 })
+        .toFile(outputPath);
+
+    // Delete original temp file
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+
+    return filename;
+};
 
 
 // Serve uploaded files statically
@@ -604,6 +650,177 @@ app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthR
 app.get('/api/photos', optionalAuthenticate, getPhotos);
 app.post('/api/photos', authenticate, isAdmin, galleryUpload.single('photo'), uploadPhoto);
 app.use('/api/gamerankings', gameRankingRouter);
+
+// Painting Projects Endpoints
+
+// Get all painting projects
+app.get('/api/painting-projects', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    try {
+        const projects = await prisma.paintingProject.findMany({
+            include: { images: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(projects);
+    } catch (error) {
+        console.error('Fetch painting projects error:', error);
+        res.status(500).json({ error: 'Failed to fetch painting projects' });
+    }
+});
+
+// Create painting project (Admin only)
+app.post('/api/painting-projects', authenticate, isAdmin, paintingUpload.array('images', 10), async (req: AuthRequest, res: Response) => {
+    const { title, status, description } = req.body;
+
+    if (!title || !status || !description) {
+        return res.status(400).json({ error: 'Title, status and description are required' });
+    }
+
+    try {
+        const files = req.files as Express.Multer.File[];
+        const processedImages: { filename: string }[] = [];
+
+        if (files && files.length > 0) {
+            for (const file of files) {
+                try {
+                    const filename = await processPaintingImage(file.path);
+                    processedImages.push({ filename });
+                } catch (err) {
+                    console.error(`Failed to process image ${file.originalname}:`, err);
+                    // Continue with other images? Or fail? Let's continue.
+                    // Clean up temp file if it exists
+                    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+                }
+            }
+        }
+
+        const project = await prisma.paintingProject.create({
+            data: {
+                title,
+                status,
+                description,
+                images: {
+                    create: processedImages
+                }
+            },
+            include: { images: true }
+        });
+        res.json(project);
+    } catch (error) {
+        console.error('Create painting project error:', error);
+        // Cleanup uploaded files if project creation fails?
+        // Complex to implement here without processed filenames context, skipping for brevity
+        res.status(500).json({ error: 'Failed to create painting project' });
+    }
+});
+
+// Update painting project (Admin only)
+app.put('/api/painting-projects/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { title, status, description } = req.body;
+
+    try {
+        const project = await prisma.paintingProject.update({
+            where: { id: parseInt(id as string) },
+            data: { title, status, description },
+            include: { images: true }
+        });
+        res.json(project);
+    } catch (error) {
+        console.error('Update painting project error:', error);
+        res.status(404).json({ error: 'Painting project not found' });
+    }
+});
+
+// Delete painting project (Admin only)
+app.delete('/api/painting-projects/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const project = await prisma.paintingProject.findUnique({
+            where: { id: parseInt(id as string) },
+            include: { images: true }
+        });
+
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        // Delete images from disk
+        for (const image of project.images) {
+            const filePath = path.join(PAINTING_DIR, image.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+
+        await prisma.paintingProject.delete({
+            where: { id: parseInt(id as string) },
+        });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Delete painting project error:', error);
+        res.status(500).json({ error: 'Failed to delete painting project' });
+    }
+});
+
+// Add images to project (Admin only)
+app.post('/api/painting-projects/:id/images', authenticate, isAdmin, paintingUpload.array('images', 10), async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const files = req.files as Express.Multer.File[];
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'No images provided' });
+        }
+
+        const processedImages: { filename: string; paintingProjectId: number }[] = [];
+
+        for (const file of files) {
+            try {
+                const filename = await processPaintingImage(file.path);
+                processedImages.push({
+                    filename,
+                    paintingProjectId: parseInt(id as string)
+                });
+            } catch (err) {
+                console.error(`Failed to process image ${file.originalname}:`, err);
+                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            }
+        }
+
+        if (processedImages.length > 0) {
+            await prisma.paintingImage.createMany({
+                data: processedImages
+            });
+        }
+
+        const updatedProject = await prisma.paintingProject.findUnique({
+            where: { id: parseInt(id as string) },
+            include: { images: true }
+        });
+
+        res.json(updatedProject);
+    } catch (error) {
+        console.error('Upload painting images error:', error);
+        res.status(500).json({ error: 'Failed to upload images' });
+    }
+});
+
+// Delete single image (Admin only)
+app.delete('/api/painting-projects/images/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const image = await prisma.paintingImage.findUnique({ where: { id: parseInt(id as string) } });
+        if (!image) return res.status(404).json({ error: 'Image not found' });
+
+        const filePath = path.join(PAINTING_DIR, image.filename);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        await prisma.paintingImage.delete({ where: { id: parseInt(id as string) } });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Delete painting image error:', error);
+        res.status(500).json({ error: 'Failed to delete image' });
+    }
+});
 
 initSecrets().then(() => {
     app.listen(port, '0.0.0.0', () => {

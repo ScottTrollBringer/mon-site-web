@@ -21,6 +21,7 @@ import Blog from './Blog';
 import Gallery from './Gallery';
 import Auth from './Auth';
 import GameRanking from './GameRanking';
+import PaintingProjects from './PaintingProjects';
 
 interface Todo {
     id: number;
@@ -156,7 +157,7 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking'>('blog');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking' | 'painting'>('blog');
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
@@ -372,6 +373,12 @@ export default function App() {
                 >
                     Classement jeux vidéo
                 </button>
+                <button
+                    className={`nav-btn ${currentView === 'painting' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('painting')}
+                >
+                    Projets de peinture
+                </button>
             </div>
 
             {currentView === 'todos' ? (
@@ -429,6 +436,8 @@ export default function App() {
                 <Gallery authToken={auth?.token || ''} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'gameranking' ? (
                 <GameRanking authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
+            ) : currentView === 'painting' ? (
+                <PaintingProjects authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}

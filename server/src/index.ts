@@ -23,6 +23,7 @@ import fs from 'fs';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
 import { getSecret } from './utils/secrets';
 import { uploadPhoto, getPhotos } from './controllers/photoController';
+import gameRankingRouter from './routes/gameRankings';
 import { execSync } from 'child_process';
 
 dotenv.config();
@@ -602,6 +603,7 @@ app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthR
 // Gallery Endpoints
 app.get('/api/photos', optionalAuthenticate, getPhotos);
 app.post('/api/photos', authenticate, isAdmin, galleryUpload.single('photo'), uploadPhoto);
+app.use('/api/gamerankings', gameRankingRouter);
 
 initSecrets().then(() => {
     app.listen(port, '0.0.0.0', () => {

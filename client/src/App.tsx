@@ -20,6 +20,7 @@ import VideoGames from './VideoGames';
 import Blog from './Blog';
 import Gallery from './Gallery';
 import Auth from './Auth';
+import GameRanking from './GameRanking';
 
 interface Todo {
     id: number;
@@ -155,7 +156,7 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery'>('blog');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking'>('blog');
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
@@ -357,13 +358,19 @@ export default function App() {
                     className={`nav-btn ${currentView === 'videogames' ? 'active' : ''}`}
                     onClick={() => setCurrentView('videogames')}
                 >
-                    Jeux Vidéo
+                    Wishlist jeux vidéo
                 </button>
                 <button
                     className={`nav-btn ${currentView === 'gallery' ? 'active' : ''}`}
                     onClick={() => setCurrentView('gallery')}
                 >
                     Galerie
+                </button>
+                <button
+                    className={`nav-btn ${currentView === 'gameranking' ? 'active' : ''}`}
+                    onClick={() => setCurrentView('gameranking')}
+                >
+                    Classement jeux vidéo
                 </button>
             </div>
 
@@ -420,6 +427,8 @@ export default function App() {
                 <VideoGames authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'gallery' ? (
                 <Gallery authToken={auth?.token || ''} userRole={auth?.user?.role || 'user'} />
+            ) : currentView === 'gameranking' ? (
+                <GameRanking authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}

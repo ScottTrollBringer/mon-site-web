@@ -49,9 +49,9 @@ async function initSecrets() {
     ADMIN_SECRET = await getSecret('admin_secret', 'GCP_ADMIN_SECRET_NAME') || ADMIN_SECRET;
 
     // News Agent secrets
-    GOOGLE_SEARCH_API_KEY = await getSecret('google_search_api_key', 'GCP_GOOGLE_SEARCH_API_KEY') || '';
-    GOOGLE_SEARCH_CX = await getSecret('google_search_cx', 'GCP_GOOGLE_SEARCH_CX') || '';
-    GEMINI_API_KEY = await getSecret('gemini_api_key', 'GCP_GEMINI_API_KEY') || '';
+    GOOGLE_SEARCH_API_KEY = await getSecret('google_search_api_key', 'GCP_GOOGLE_SEARCH_API_KEY_NAME') || '';
+    GOOGLE_SEARCH_CX = await getSecret('google_search_cx', 'GCP_GOOGLE_SEARCH_CX_NAME') || '';
+    GEMINI_API_KEY = await getSecret('gemini_api_key', 'GCP_GEMINI_API_KEY_NAME') || '';
 
     const dbUrl = await getSecret('db_url', 'GCP_DB_URL_NAME');
     if (dbUrl) {

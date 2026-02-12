@@ -24,6 +24,7 @@ import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/au
 import { getSecret } from './utils/secrets';
 import { uploadPhoto, getPhotos } from './controllers/photoController';
 import gameRankingRouter from './routes/gameRankings';
+import { getCachedDigest, generateDigest, isDigestGenerating } from './services/newsAgent';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
 
@@ -34,6 +35,9 @@ const app = express();
 const port = 3000;
 
 let ADMIN_SECRET = process.env.ADMIN_SECRET;
+let GOOGLE_SEARCH_API_KEY = '';
+let GOOGLE_SEARCH_CX = '';
+let GEMINI_API_KEY = '';
 
 // Initialize secrets and Prisma
 async function initSecrets() {
@@ -43,6 +47,11 @@ async function initSecrets() {
     }
 
     ADMIN_SECRET = await getSecret('admin_secret', 'GCP_ADMIN_SECRET_NAME') || ADMIN_SECRET;
+
+    // News Agent secrets
+    GOOGLE_SEARCH_API_KEY = await getSecret('google_search_api_key', 'GCP_GOOGLE_SEARCH_API_KEY') || '';
+    GOOGLE_SEARCH_CX = await getSecret('google_search_cx', 'GCP_GOOGLE_SEARCH_CX') || '';
+    GEMINI_API_KEY = await getSecret('gemini_api_key', 'GCP_GEMINI_API_KEY') || '';
 
     const dbUrl = await getSecret('db_url', 'GCP_DB_URL_NAME');
     if (dbUrl) {
@@ -819,6 +828,53 @@ app.delete('/api/painting-projects/images/:id', authenticate, isAdmin, async (re
     } catch (error) {
         console.error('Delete painting image error:', error);
         res.status(500).json({ error: 'Failed to delete image' });
+    }
+});
+
+// News Digest Endpoints
+
+// Get latest news digest (public)
+app.get('/api/news-digest', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    try {
+        const digest = getCachedDigest();
+        if (!digest) {
+            return res.json({
+                generatedAt: null,
+                topics: [],
+                status: 'empty',
+                message: 'Aucun rapport de veille disponible. Un administrateur doit déclencher la génération.',
+            });
+        }
+        res.json(digest);
+    } catch (error) {
+        console.error('Fetch news digest error:', error);
+        res.status(500).json({ error: 'Failed to fetch news digest' });
+    }
+});
+
+// Trigger digest refresh (admin only)
+app.post('/api/news-digest/refresh', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+    if (isDigestGenerating()) {
+        return res.status(409).json({ error: 'Un rapport est déjà en cours de génération. Veuillez patienter.' });
+    }
+
+    if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_CX || !GEMINI_API_KEY) {
+        return res.status(500).json({
+            error: 'Clés API manquantes. Vérifiez google_search_api_key, google_search_cx et gemini_api_key dans les secrets.',
+        });
+    }
+
+    try {
+        // Start generation in background and respond immediately
+        res.json({ message: 'Génération du rapport de veille lancée...' });
+
+        // Generate asynchronously
+        generateDigest(GOOGLE_SEARCH_API_KEY, GOOGLE_SEARCH_CX, GEMINI_API_KEY)
+            .then(() => console.log('[NewsAgent] Digest refresh completed'))
+            .catch(err => console.error('[NewsAgent] Digest refresh failed:', err));
+    } catch (error) {
+        console.error('Refresh news digest error:', error);
+        res.status(500).json({ error: 'Failed to start digest generation' });
     }
 });
 

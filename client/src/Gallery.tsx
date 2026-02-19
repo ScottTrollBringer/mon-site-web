@@ -177,7 +177,7 @@ export default function Gallery({ authToken, userRole, onNavigate }: GalleryProp
             {fullscreenPhoto && createPortal(
                 <div className="lightbox-overlay" onClick={() => setFullscreenPhoto(null)}>
                     <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-                        <img src={`/uploads/gallery/${fullscreenPhoto}`} alt="Full screen" />
+                        <img src={`/uploads/gallery/${fullscreenPhoto}`} alt="Full screen" className="lightbox-image" />
                     </div>
                     <button className="lightbox-close" onClick={() => setFullscreenPhoto(null)}>×</button>
                 </div>,

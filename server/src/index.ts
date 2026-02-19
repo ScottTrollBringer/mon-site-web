@@ -261,11 +261,11 @@ app.post('/api/todos', authenticate, isAdmin, async (req: AuthRequest, res: Resp
         return res.status(400).json({ error: 'Description is required' });
     }
     try {
-        const lastTodo = await prisma.todo.findFirst({
+        const firstTodo = await prisma.todo.findFirst({
             where: { userId: req.userId },
-            orderBy: { position: 'desc' },
+            orderBy: { position: 'asc' },
         });
-        const position = lastTodo ? lastTodo.position + 1 : 0;
+        const position = firstTodo ? firstTodo.position - 1 : 0;
 
         const todo = await prisma.todo.create({
             data: { description, position, userId: req.userId! },

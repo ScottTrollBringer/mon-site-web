@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import VideoGames from './VideoGames';
 import Blog from './Blog';
 import Gallery from './Gallery';
+import GalleryImage from './GalleryImage';
 import Auth from './Auth';
 import GameRanking from './GameRanking';
 import PaintingProjects from './PaintingProjects';
@@ -135,13 +136,41 @@ function SortableItem({
 }
 
 export default function App() {
-    // Gestion du routage par slug pour le blog (navigation directe)
+    // Gestion du routage par slug pour le blog et galerie
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gallery-image' | 'gameranking' | 'painting'>('blog');
+    const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
+
     useEffect(() => {
-        if (window.location.pathname.startsWith('/blog/')) {
-            // Force l'affichage du blog si on accède à /blog/:slug
-            setCurrentView('blog');
-        }
+        const handleLocationChange = () => {
+            const path = window.location.pathname;
+            if (path.startsWith('/blog/')) {
+                setCurrentView('blog');
+            } else if (path.startsWith('/gallery/')) {
+                const parts = path.split('/');
+                if (parts.length === 3) {
+                    const id = parseInt(parts[2]);
+                    if (!isNaN(id)) {
+                        setSelectedImageId(id);
+                        setCurrentView('gallery-image');
+                    } else {
+                        setCurrentView('gallery');
+                    }
+                } else {
+                    setCurrentView('gallery');
+                }
+            } else if (path === '/gallery') {
+                setCurrentView('gallery');
+            }
+        };
+
+        // Initial check
+        handleLocationChange();
+
+        // Listen for popstate
+        window.addEventListener('popstate', handleLocationChange);
+        return () => window.removeEventListener('popstate', handleLocationChange);
     }, []);
+
     const [auth, setAuth] = useState<{ token: string; user: { id: number; username: string; role: string } } | null>(() => {
         const saved = localStorage.getItem('auth');
         try {
@@ -158,7 +187,7 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking' | 'painting'>('blog');
+
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
@@ -435,7 +464,24 @@ export default function App() {
             ) : currentView === 'videogames' ? (
                 <VideoGames authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'gallery' ? (
-                <Gallery authToken={auth?.token || ''} userRole={auth?.user?.role || 'user'} />
+                <Gallery
+                    authToken={auth?.token || ''}
+                    userRole={auth?.user?.role || 'user'}
+                    onNavigate={(id) => {
+                        window.history.pushState(null, '', `/gallery/${id}`);
+                        setSelectedImageId(id);
+                        setCurrentView('gallery-image');
+                    }}
+                />
+            ) : currentView === 'gallery-image' && selectedImageId ? (
+                <GalleryImage
+                    imageId={selectedImageId}
+                    onBack={() => {
+                        window.history.pushState(null, '', '/gallery');
+                        setCurrentView('gallery');
+                        setSelectedImageId(null);
+                    }}
+                />
             ) : currentView === 'gameranking' ? (
                 <GameRanking authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'painting' ? (

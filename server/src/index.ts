@@ -22,7 +22,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticate, optionalAuthenticate, AuthRequest } from './middleware/auth';
 import { getSecret } from './utils/secrets';
-import { uploadPhoto, getPhotos } from './controllers/photoController';
+import { uploadPhoto, getPhotos, getPhotoById } from './controllers/photoController';
 import gameRankingRouter from './routes/gameRankings';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
@@ -660,6 +660,7 @@ app.delete('/api/blog/images/:imageId', authenticate, isAdmin, async (req: AuthR
 
 // Gallery Endpoints
 app.get('/api/photos', optionalAuthenticate, getPhotos);
+app.get('/api/photos/:id', optionalAuthenticate, getPhotoById);
 app.post('/api/photos', authenticate, isAdmin, galleryUpload.single('photo'), uploadPhoto);
 app.use('/api/gamerankings', gameRankingRouter);
 

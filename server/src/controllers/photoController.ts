@@ -64,3 +64,22 @@ export const getPhotos = async (req: Request, res: Response): Promise<void> => {
         res.status(500).json({ message: 'Error fetching photos' });
     }
 };
+
+export const getPhotoById = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    try {
+        const photo = await prisma.photo.findUnique({
+            where: { id: parseInt(id as string) },
+        });
+
+        if (!photo) {
+            res.status(404).json({ message: 'Photo not found' });
+            return;
+        }
+
+        res.json(photo);
+    } catch (error) {
+        console.error('Error fetching photo:', error);
+        res.status(500).json({ message: 'Error fetching photo' });
+    }
+};

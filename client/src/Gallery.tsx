@@ -14,9 +14,10 @@ interface Photo {
 interface GalleryProps {
     authToken: string;
     userRole: string;
+    onNavigate: (id: number) => void;
 }
 
-export default function Gallery({ authToken, userRole }: GalleryProps) {
+export default function Gallery({ authToken, userRole, onNavigate }: GalleryProps) {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [filterTag, setFilterTag] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -152,12 +153,21 @@ export default function Gallery({ authToken, userRole }: GalleryProps) {
 
             <div className="gallery-grid">
                 {filteredPhotos.map(photo => (
-                    <div key={photo.id} className="gallery-item" onClick={() => setFullscreenPhoto(photo.filename)}>
-                        <div className="image-wrapper">
+                    <div key={photo.id} className="gallery-item">
+                        <div className="image-wrapper" onClick={() => setFullscreenPhoto(photo.filename)}>
                             <img src={`/uploads/gallery/${photo.filename}`} alt={photo.name} loading="lazy" />
                         </div>
                         <div className="photo-info">
-                            <span className="photo-name">{photo.name}</span>
+                            <span
+                                className="photo-name clickable"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onNavigate(photo.id);
+                                }}
+                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                                {photo.name}
+                            </span>
                             <span className="photo-tag">{photo.tag}</span>
                         </div>
                     </div>

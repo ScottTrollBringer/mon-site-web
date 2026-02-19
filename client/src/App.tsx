@@ -22,7 +22,7 @@ import Gallery from './Gallery';
 import Auth from './Auth';
 import GameRanking from './GameRanking';
 import PaintingProjects from './PaintingProjects';
-import NewsDigest from './NewsDigest';
+
 
 interface Todo {
     id: number;
@@ -158,7 +158,7 @@ export default function App() {
             return null;
         }
     });
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking' | 'painting' | 'newsdigest'>('blog');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gameranking' | 'painting'>('blog');
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
@@ -380,12 +380,7 @@ export default function App() {
                 >
                     Projets de peinture
                 </button>
-                <button
-                    className={`nav-btn ${currentView === 'newsdigest' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('newsdigest')}
-                >
-                    📰 Veille
-                </button>
+
             </div>
 
             {currentView === 'todos' ? (
@@ -445,8 +440,6 @@ export default function App() {
                 <GameRanking authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'painting' ? (
                 <PaintingProjects authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
-            ) : currentView === 'newsdigest' ? (
-                <NewsDigest authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}

@@ -332,10 +332,22 @@ app.delete('/api/todos/:id', authenticate, isAdmin, async (req: AuthRequest, res
 // Video Games Endpoints
 app.get('/api/videogames', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
     try {
-        const targetUserId = req.userRole === 'admin' ? req.userId : (await prisma.user.findFirst({ where: { role: 'admin' } }))?.id;
+        // If authenticated as admin, return their own games (for management)
+        if (req.userRole === 'admin' && req.userId) {
+            const games = await prisma.videoGame.findMany({
+                where: { userId: req.userId },
+                orderBy: { position: 'asc' },
+            });
+            return res.json(games);
+        }
 
+        // For guests or non-admin users, return games from ALL admins
         const games = await prisma.videoGame.findMany({
-            where: { userId: targetUserId },
+            where: {
+                user: {
+                    role: 'admin'
+                }
+            },
             orderBy: { position: 'asc' },
         });
         res.json(games);

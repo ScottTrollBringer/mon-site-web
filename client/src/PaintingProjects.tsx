@@ -18,9 +18,10 @@ interface PaintingProjectsProps {
     authToken: string;
     userRole: string;
     onAuthError: () => void;
+    onNavigate: (id: number) => void;
 }
 
-export default function PaintingProjects({ authToken, userRole, onAuthError }: PaintingProjectsProps) {
+export default function PaintingProjects({ authToken, userRole, onAuthError, onNavigate }: PaintingProjectsProps) {
     const [projects, setProjects] = useState<PaintingProject[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -57,8 +58,6 @@ export default function PaintingProjects({ authToken, userRole, onAuthError }: P
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-
         if (editingId) {
             // Update existing project (metadata only)
             try {
@@ -214,9 +213,7 @@ export default function PaintingProjects({ authToken, userRole, onAuthError }: P
         setSelectedImage(null);
         document.body.style.overflow = 'auto'; // Restore scrolling
     };
-
-    if (loading) return <div>Loading...</div>;
-
+    // ...
     return (
         <div className="painting-projects-container">
             <h2>Projets de Peinture</h2>
@@ -285,7 +282,13 @@ export default function PaintingProjects({ authToken, userRole, onAuthError }: P
                 {projects.map(project => (
                     <div key={project.id} className="project-card">
                         <div className="project-header">
-                            <h3>{project.title}</h3>
+                            <h3
+                                onClick={() => onNavigate(project.id)}
+                                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                className="clickable-title"
+                            >
+                                {project.title}
+                            </h3>
                             <span className={`status-badge ${project.status === 'En cours' ? 'in-progress' : 'upcoming'}`}>
                                 {project.status}
                             </span>

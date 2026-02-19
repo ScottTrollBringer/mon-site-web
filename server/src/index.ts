@@ -680,6 +680,24 @@ app.get('/api/painting-projects', optionalAuthenticate, async (req: AuthRequest,
     }
 });
 
+// Get single painting project
+app.get('/api/painting-projects/:id', optionalAuthenticate, async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+        const project = await prisma.paintingProject.findUnique({
+            where: { id: parseInt(id as string) },
+            include: { images: true }
+        });
+        if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+        res.json(project);
+    } catch (error) {
+        console.error('Fetch painting project error:', error);
+        res.status(500).json({ error: 'Failed to fetch painting project' });
+    }
+});
+
 // Create painting project (Admin only)
 app.post('/api/painting-projects', authenticate, isAdmin, paintingUpload.array('images', 10), async (req: AuthRequest, res: Response) => {
     const { title, status, description } = req.body;

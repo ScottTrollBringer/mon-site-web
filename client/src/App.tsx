@@ -23,6 +23,7 @@ import GalleryImage from './GalleryImage';
 import Auth from './Auth';
 import GameRanking from './GameRanking';
 import PaintingProjects from './PaintingProjects';
+import PaintingProjectDetails from './PaintingProjectDetails';
 
 
 interface Todo {
@@ -137,8 +138,9 @@ function SortableItem({
 
 export default function App() {
     // Gestion du routage par slug pour le blog et galerie
-    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gallery-image' | 'gameranking' | 'painting'>('blog');
+    const [currentView, setCurrentView] = useState<'todos' | 'videogames' | 'blog' | 'gallery' | 'gallery-image' | 'gameranking' | 'painting' | 'painting-project'>('blog');
     const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
     useEffect(() => {
         const handleLocationChange = () => {
@@ -160,6 +162,21 @@ export default function App() {
                 }
             } else if (path === '/gallery') {
                 setCurrentView('gallery');
+            } else if (path.startsWith('/painting-projects/')) {
+                const parts = path.split('/');
+                if (parts.length === 3) {
+                    const id = parseInt(parts[2]);
+                    if (!isNaN(id)) {
+                        setSelectedProjectId(id);
+                        setCurrentView('painting-project');
+                    } else {
+                        setCurrentView('painting');
+                    }
+                } else {
+                    setCurrentView('painting');
+                }
+            } else if (path === '/painting-projects') {
+                setCurrentView('painting');
             }
         };
 
@@ -482,10 +499,37 @@ export default function App() {
                         setSelectedImageId(null);
                     }}
                 />
+            ) : currentView === 'painting-project' && selectedProjectId ? (
+                <PaintingProjectDetails
+                    projectId={selectedProjectId}
+                    onBack={() => {
+                        window.history.pushState(null, '', '/painting-projects');
+                        setCurrentView('painting');
+                        setSelectedProjectId(null);
+                    }}
+                />
             ) : currentView === 'gameranking' ? (
                 <GameRanking authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             ) : currentView === 'painting' ? (
-                <PaintingProjects authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
+                <PaintingProjects
+                    authToken={auth?.token || ''}
+                    onAuthError={handleLogout}
+                    userRole={auth?.user?.role || 'user'}
+                    onNavigate={(id) => {
+                        window.history.pushState(null, '', `/painting-projects/${id}`);
+                        setSelectedProjectId(id);
+                        setCurrentView('painting-project');
+                    }}
+                />
+            ) : currentView === 'painting-project' && selectedProjectId ? (
+                <PaintingProjectDetails
+                    projectId={selectedProjectId}
+                    onBack={() => {
+                        window.history.pushState(null, '', '/painting-projects');
+                        setCurrentView('painting');
+                        setSelectedProjectId(null);
+                    }}
+                />
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}

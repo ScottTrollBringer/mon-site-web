@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactGA from 'react-ga4';
+import { Helmet } from 'react-helmet-async';
 
 ReactGA.initialize('G-5NBQJX8V6E');
 import {
@@ -191,38 +192,53 @@ export default function App() {
         return () => window.removeEventListener('popstate', handleLocationChange);
     }, []);
 
+    const [metaDescription, setMetaDescription] = useState('Bienvenue sur Praetor Scott');
+    const [pageTitle, setPageTitle] = useState('Praetor Scott');
+
     useEffect(() => {
         let path = window.location.pathname;
         let title = 'Praetor Scott';
+        let description = "Ce site montre les photos des figurines que j'ai peintes, les jeux vidéos auxquels j'ai joués et les projets sur lesquels je travaille.";
 
         if (currentView === 'blog') {
             if (path === '/' || !path.startsWith('/blog/')) {
                 path = '/blog';
-                title = 'Blog';
+                title = 'Blog - Praetor Scott';
+                description = 'Le blog de Praetor Scott : retrouvez tous les derniers articles thématiques, réflexions et actualités.';
             }
+            // Add specific blog article cases later if routing is updated.
         } else if (currentView === 'todos') {
             path = '/todos';
-            title = 'Tâches';
+            title = 'Tâches - Praetor Scott';
+            description = 'NoIndex'; // Will be handled to generate a noindex tag instead of a standard description.
         } else if (currentView === 'videogames') {
             path = '/videogames';
-            title = 'Wishlist jeux vidéo';
+            title = 'Wishlist jeux vidéo - Praetor Scott';
+            description = "Découvrez la page détaillant ma liste d'envie de jeux vidéo. Les meilleurs jeux auxquels je vais jouer.";
         } else if (currentView === 'gameranking') {
             path = '/gameranking';
-            title = 'Classement jeux vidéo';
+            title = 'Classement jeux vidéo - Praetor Scott';
+            description = "Je partage ici tous mes avis, ressentis et notes des jeux vidéo auxquels j'ai joué afin d'en faire un classement subjectif.";
         } else if (currentView === 'gallery') {
             path = '/gallery';
-            title = 'Galerie';
+            title = 'Galerie - Praetor Scott';
+            description = "Parcourez la galerie visuelle des figurines de Praetor Scott. Principalement du Warhammer 40K et de la fantasy type D&D, mais pas seulement.";
         } else if (currentView === 'gallery-image' && selectedImageId) {
             path = `/gallery/${selectedImageId}`;
-            title = `Image Galerie ${selectedImageId}`;
+            title = `Image Galerie ${selectedImageId} - Praetor Scott`;
+            description = `Regardez la galerie d'image numéro ${selectedImageId} sur Praetor Scott.`;
         } else if (currentView === 'painting') {
             path = '/painting-projects';
-            title = 'Projets de peinture';
+            title = 'Projets de peinture - Praetor Scott';
+            description = 'Voici mon portfolio complet dédié à la peinture de figurines. Tous les projets à venir et en cours.';
         } else if (currentView === 'painting-project' && selectedProjectId) {
             path = `/painting-projects/${selectedProjectId}`;
-            title = `Projet Peinture ${selectedProjectId}`;
+            title = `Projet Peinture ${selectedProjectId} - Praetor Scott`;
+            description = `Découvrez tous les détails d'un de mes de projets de peinture numéro ${selectedProjectId}.`;
         }
 
+        setMetaDescription(description);
+        setPageTitle(title);
         ReactGA.send({ hitType: 'pageview', page: path, title });
     }, [currentView, selectedImageId, selectedProjectId]);
 
@@ -406,6 +422,15 @@ export default function App() {
 
     return (
         <div className="app-container">
+            <Helmet>
+                <title>{pageTitle}</title>
+                {metaDescription === 'NoIndex' ? (
+                    <meta name="robots" content="noindex" />
+                ) : (
+                    <meta name="description" content={metaDescription} />
+                )}
+            </Helmet>
+
             <div className="user-header">
                 {auth ? (
                     <>

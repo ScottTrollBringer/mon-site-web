@@ -853,9 +853,68 @@ app.delete('/api/painting-projects/images/:id', authenticate, isAdmin, async (re
     }
 });
 
+// Sitemap Endpoint
+app.get('/sitemap.xml', async (req: Request, res: Response) => {
+    try {
+        const baseUrl = 'https://hobby.ianfraser.fr';
 
+        // 1. Fetch dynamic data
+        const [blogPosts, paintingProjects, galleryImages] = await Promise.all([
+            prisma.blogPost.findMany({ select: { slug: true, updatedAt: true } }),
+            prisma.paintingProject.findMany({ select: { id: true, updatedAt: true } }),
+            prisma.photo.findMany({ select: { id: true, createdAt: true } }),
+        ]);
 
-initSecrets().then(() => {
+        // 2. Generate XML content
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+        // Helper function to add URLs
+        const addUrl = (loc: string, changefreq: string, priority: string, lastmod?: Date) => {
+            xml += '  <url>\n';
+            xml += `    <loc>${baseUrl}${loc}</loc>\n`;
+            if (lastmod) {
+                // Formatting date to W3C Datetime format
+                xml += `    <lastmod>${lastmod.toISOString().split('T')[0]}</lastmod>\n`;
+            }
+            xml += `    <changefreq>${changefreq}</changefreq>\n`;
+            xml += `    <priority>${priority}</priority>\n`;
+            xml += '  </url>\n';
+        };
+
+        // Static routes
+        addUrl('/', 'daily', '1.0');
+        addUrl('/blog', 'daily', '0.9');
+        addUrl('/painting-projects', 'weekly', '0.8');
+        addUrl('/gallery', 'weekly', '0.8');
+        addUrl('/gameranking', 'monthly', '0.8');
+        addUrl('/videogames', 'monthly', '0.8');
+
+        // Dynamic Blog Posts
+        blogPosts.forEach(post => {
+            addUrl(`/blog/${post.slug}`, 'weekly', '0.7', post.updatedAt);
+        });
+
+        // Dynamic Painting Projects
+        paintingProjects.forEach(project => {
+            addUrl(`/painting-projects/${project.id}`, 'monthly', '0.6', project.updatedAt);
+        });
+
+        // Dynamic Gallery Images
+        galleryImages.forEach(image => {
+            addUrl(`/gallery/${image.id}`, 'monthly', '0.5', image.createdAt);
+        });
+
+        xml += '</urlset>';
+
+        // 3. Send Response
+        res.header('Content-Type', 'application/xml');
+        res.status(200).send(xml);
+    } catch (error) {
+        console.error('Sitemap generation error:', error);
+        res.status(500).end();
+    }
+}); initSecrets().then(() => {
     app.listen(port, '0.0.0.0', () => {
         console.log(`Server running at http://0.0.0.0:${port}`);
     });

@@ -4,3 +4,5 @@ Disallow: /todos/
 Disallow: /videogames/
 Disallow: /gameranking/
 Disallow: /api/
+
+Sitemap: https://hobby.ianfraser.fr/sitemap.xml

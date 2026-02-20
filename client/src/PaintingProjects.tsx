@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import ReactGA from 'react-ga4';
 
 interface PaintingImage {
     id: number;
@@ -214,6 +215,12 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
         setSelectedImage(null);
         document.body.style.overflow = 'auto'; // Restore scrolling
     };
+
+    useEffect(() => {
+        if (selectedImage) {
+            ReactGA.send({ hitType: 'pageview', page: `/painting-projects/image/${selectedImage}`, title: 'Image Projet Peinture Lightbox' });
+        }
+    }, [selectedImage]);
     // ...
     return (
         <div className="painting-projects-container">

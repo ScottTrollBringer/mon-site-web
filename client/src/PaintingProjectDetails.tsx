@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import ReactGA from 'react-ga4';
 
 interface PaintingImage {
     id: number;
@@ -58,6 +59,12 @@ export default function PaintingProjectDetails({ projectId, onBack }: PaintingPr
         setSelectedImage(null);
         document.body.style.overflow = 'auto'; // Restore scrolling
     };
+
+    useEffect(() => {
+        if (selectedImage) {
+            ReactGA.send({ hitType: 'pageview', page: `/painting-projects/image/${selectedImage}`, title: 'Image Projet Peinture Lightbox' });
+        }
+    }, [selectedImage]);
 
     if (loading) return <div className="painting-details-loading">Chargement...</div>;
     if (error || !project) return <div className="painting-details-error">{error || 'Projet introuvable'}</div>;

@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import ReactGA from 'react-ga4';
+
+ReactGA.initialize('G-5NBQJX8V6E');
 import {
     DndContext,
     closestCenter,
@@ -187,6 +190,41 @@ export default function App() {
         window.addEventListener('popstate', handleLocationChange);
         return () => window.removeEventListener('popstate', handleLocationChange);
     }, []);
+
+    useEffect(() => {
+        let path = window.location.pathname;
+        let title = 'Praetor Scott';
+
+        if (currentView === 'blog') {
+            if (path === '/' || !path.startsWith('/blog/')) {
+                path = '/blog';
+                title = 'Blog';
+            }
+        } else if (currentView === 'todos') {
+            path = '/todos';
+            title = 'Tâches';
+        } else if (currentView === 'videogames') {
+            path = '/videogames';
+            title = 'Wishlist jeux vidéo';
+        } else if (currentView === 'gameranking') {
+            path = '/gameranking';
+            title = 'Classement jeux vidéo';
+        } else if (currentView === 'gallery') {
+            path = '/gallery';
+            title = 'Galerie';
+        } else if (currentView === 'gallery-image' && selectedImageId) {
+            path = `/gallery/${selectedImageId}`;
+            title = `Image Galerie ${selectedImageId}`;
+        } else if (currentView === 'painting') {
+            path = '/painting-projects';
+            title = 'Projets de peinture';
+        } else if (currentView === 'painting-project' && selectedProjectId) {
+            path = `/painting-projects/${selectedProjectId}`;
+            title = `Projet Peinture ${selectedProjectId}`;
+        }
+
+        ReactGA.send({ hitType: 'pageview', page: path, title });
+    }, [currentView, selectedImageId, selectedProjectId]);
 
     const [auth, setAuth] = useState<{ token: string; user: { id: number; username: string; role: string } } | null>(() => {
         const saved = localStorage.getItem('auth');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import ReactGA from 'react-ga4';
 
 interface BlogImage {
     id: number;
@@ -92,6 +93,18 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
         };
     }, [fullscreenImage]);
 
+    useEffect(() => {
+        if (slugView) {
+            ReactGA.send({ hitType: 'pageview', page: `/blog/${slugView}`, title: selectedPost?.title ? `Article: ${selectedPost.title}` : `Article Blog ${slugView}` });
+        }
+    }, [slugView, selectedPost?.title]);
+
+    useEffect(() => {
+        if (fullscreenImage) {
+            ReactGA.send({ hitType: 'pageview', page: `/blog/image/${fullscreenImage}`, title: 'Image Blog Lightbox' });
+        }
+    }, [fullscreenImage]);
+
     const fetchWithAuth = (url: string, options: RequestInit = {}) => {
         const headers: Record<string, string> = {};
         if (authToken) {
@@ -151,7 +164,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
             if (res.ok) {
                 const newPost = await res.json();
                 console.log('Post created:', newPost);
-                
+
                 // Reset form
                 setFormData({ title: '', content: '' });
                 setSelectedFiles([]);

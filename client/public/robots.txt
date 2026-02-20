@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /todos/
+Disallow: /videogames/
+Disallow: /gameranking/
+Disallow: /api/

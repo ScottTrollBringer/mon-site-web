@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface PaintingImage {
     id: number;
@@ -332,13 +333,14 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
                 {projects.length === 0 && <p className="no-data">Aucun projet pour le moment.</p>}
             </div>
 
-            {selectedImage && (
+            {selectedImage && createPortal(
                 <div className="lightbox-overlay" onClick={closeLightbox}>
                     <div className="lightbox-content" onClick={e => e.stopPropagation()}>
                         <button className="lightbox-close" onClick={closeLightbox}>×</button>
                         <img src={`/uploads/painting/${selectedImage}`} alt="Full size" />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`

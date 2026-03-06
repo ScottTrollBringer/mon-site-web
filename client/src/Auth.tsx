@@ -46,6 +46,7 @@ export default function Auth({ onLogin, onCancel }: AuthProps) {
                         <input
                             type="text"
                             placeholder="Identifiant"
+                            aria-label="Identifiant"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
@@ -55,6 +56,7 @@ export default function Auth({ onLogin, onCancel }: AuthProps) {
                         <input
                             type="password"
                             placeholder="Mot de passe"
+                            aria-label="Mot de passe"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -68,6 +70,7 @@ export default function Auth({ onLogin, onCancel }: AuthProps) {
                             <input
                                 type="text"
                                 placeholder="Entrer le code secret"
+                                aria-label="Code secret admin"
                                 value={secretCode}
                                 onChange={(e) => setSecretCode(e.target.value)}
                             />

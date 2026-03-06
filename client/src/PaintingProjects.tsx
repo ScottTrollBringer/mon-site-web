@@ -244,13 +244,14 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
                                 <input
                                     type="text"
                                     placeholder="Titre"
+                                    aria-label="Titre du projet"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     required
                                 />
                             </div>
                             <div className="form-group">
-                                <select value={status} onChange={e => setStatus(e.target.value)}>
+                                <select aria-label="Statut du projet" value={status} onChange={e => setStatus(e.target.value)}>
                                     <option value="En cours">En cours</option>
                                     <option value="Prochainement">Prochainement</option>
                                 </select>
@@ -258,6 +259,7 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
                             <div className="form-group">
                                 <textarea
                                     placeholder="Description"
+                                    aria-label="Description du projet"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     required
@@ -291,6 +293,14 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
                     <div key={project.id} className="project-card">
                         <div className="project-header">
                             <h3
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        onNavigate(project.id);
+                                    }
+                                }}
                                 onClick={() => onNavigate(project.id)}
                                 style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                 className="clickable-title"
@@ -309,13 +319,22 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
                                 <div key={img.id} className="image-wrapper">
                                     <img
                                         src={`/uploads/painting/${img.filename}`}
-                                        alt="Project"
+                                        alt={`Zoom sur l'image du projet: ${project.title}`}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                openLightbox(img.filename);
+                                            }
+                                        }}
                                         onClick={() => openLightbox(img.filename)}
                                         className="clickable-image"
                                     />
                                     {isAdmin && isEditing && editingId === project.id && (
                                         <button
                                             className="delete-img-btn"
+                                            aria-label="Supprimer l'image"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDeleteImage(img.id);
@@ -343,8 +362,8 @@ export default function PaintingProjects({ authToken, userRole, onAuthError, onN
             {selectedImage && createPortal(
                 <div className="lightbox-overlay" onClick={closeLightbox}>
                     <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-                        <button className="lightbox-close" onClick={closeLightbox}>×</button>
-                        <img src={`/uploads/painting/${selectedImage}`} alt="Full size" />
+                        <button className="lightbox-close" aria-label="Fermer" onClick={closeLightbox}>×</button>
+                        <img src={`/uploads/painting/${selectedImage}`} alt="Image en taille réelle" />
                     </div>
                 </div>,
                 document.body

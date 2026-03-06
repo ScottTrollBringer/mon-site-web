@@ -305,7 +305,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                                     <div key={img.id} className="blog-image-container">
                                         <img
                                             src={`/uploads/blog/${img.filename}`}
-                                            alt=""
+                                            alt={`Illustration du blog: ${img.filename}`}
                                             className="blog-image"
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -317,6 +317,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                                         {isAdmin && (
                                             <button
                                                 className="image-delete-btn"
+                                                aria-label="Supprimer l'image"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteImage(img.id);
@@ -373,12 +374,14 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                         <input
                             type="text"
                             placeholder="Titre de l'article"
+                            aria-label="Titre de l'article"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             className="blog-input"
                         />
                         <textarea
                             placeholder="Contenu de l'article..."
+                            aria-label="Contenu de l'article"
                             value={formData.content}
                             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                             className="blog-textarea"
@@ -397,12 +400,14 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                         <input
                             type="text"
                             placeholder="Titre de l'article"
+                            aria-label="Titre de l'article"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             className="blog-input"
                         />
                         <textarea
                             placeholder="Contenu de l'article..."
+                            aria-label="Contenu de l'article"
                             value={formData.content}
                             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                             className="blog-textarea"
@@ -442,6 +447,16 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                             <article key={post.id} className="blog-card">
                                 <h3
                                     className="blog-title"
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setSelectedPost(post);
+                                            setSlugView(post.slug);
+                                            window.history.pushState({}, '', `/blog/${post.slug}`);
+                                        }
+                                    }}
                                     onClick={() => {
                                         setSelectedPost(post);
                                         setSlugView(post.slug);
@@ -470,6 +485,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                         <div className="pagination">
                             <button
                                 className="pagination-btn"
+                                aria-label="Page Précédente"
                                 disabled={pagination.page <= 1}
                                 onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
                             >
@@ -480,6 +496,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                             </span>
                             <button
                                 className="pagination-btn"
+                                aria-label="Page Suivante"
                                 disabled={pagination.page >= pagination.totalPages}
                                 onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                             >
@@ -499,7 +516,7 @@ export default function Blog({ authToken, onAuthError, userRole }: BlogProps) {
                             className="lightbox-image"
                         />
                     </div>
-                    <button className="lightbox-close" onClick={() => setFullscreenImage(null)}>×</button>
+                    <button className="lightbox-close" aria-label="Fermer" onClick={() => setFullscreenImage(null)}>×</button>
                 </div>,
                 document.body
             )}

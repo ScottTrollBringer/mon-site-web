@@ -103,6 +103,7 @@ export default function Gallery({ authToken, userRole, onNavigate }: GalleryProp
                         <input
                             type="text"
                             placeholder="Nom de la photo"
+                            aria-label="Nom de la photo"
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             className="gallery-input"
@@ -112,6 +113,7 @@ export default function Gallery({ authToken, userRole, onNavigate }: GalleryProp
                         <input
                             type="text"
                             placeholder="Tag (ex: SciFi, Fantasy)"
+                            aria-label="Tag ou catégorie"
                             value={formData.tag}
                             onChange={e => setFormData({ ...formData, tag: e.target.value })}
                             className="gallery-input"
@@ -154,12 +156,31 @@ export default function Gallery({ authToken, userRole, onNavigate }: GalleryProp
             <div className="gallery-grid">
                 {filteredPhotos.map(photo => (
                     <div key={photo.id} className="gallery-item">
-                        <div className="image-wrapper" onClick={() => setFullscreenPhoto(photo.filename)}>
-                            <img src={`/uploads/gallery/${photo.filename}`} alt={photo.name} loading="lazy" />
+                        <div
+                            className="image-wrapper"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setFullscreenPhoto(photo.filename)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setFullscreenPhoto(photo.filename);
+                                }
+                            }}
+                        >
+                            <img src={`/uploads/gallery/${photo.filename}`} alt={`Photo : ${photo.name}`} loading="lazy" />
                         </div>
                         <div className="photo-info">
                             <span
                                 className="photo-name clickable"
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        onNavigate(photo.id);
+                                    }
+                                }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onNavigate(photo.id);
@@ -177,9 +198,9 @@ export default function Gallery({ authToken, userRole, onNavigate }: GalleryProp
             {fullscreenPhoto && createPortal(
                 <div className="lightbox-overlay" onClick={() => setFullscreenPhoto(null)}>
                     <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-                        <img src={`/uploads/gallery/${fullscreenPhoto}`} alt="Full screen" className="lightbox-image" />
+                        <img src={`/uploads/gallery/${fullscreenPhoto}`} alt="Vue agrandie de la photo" className="lightbox-image" />
                     </div>
-                    <button className="lightbox-close" onClick={() => setFullscreenPhoto(null)}>×</button>
+                    <button className="lightbox-close" aria-label="Fermer" onClick={() => setFullscreenPhoto(null)}>×</button>
                 </div>,
                 document.body
             )}

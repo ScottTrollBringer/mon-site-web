@@ -86,13 +86,23 @@ function SortableItem({
         >
             <div
                 className={`checkbox ${todo.completed ? 'checked' : ''} ${!isAdmin ? 'disabled' : ''}`}
+                role="checkbox"
+                aria-checked={todo.completed}
+                tabIndex={isAdmin ? 0 : -1}
                 onClick={() => isAdmin && toggleTodo(todo)}
+                onKeyDown={(e) => {
+                    if (isAdmin && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        toggleTodo(todo);
+                    }
+                }}
             />
 
             {editingId === todo.id ? (
                 <input
                     className="edit-input"
                     type="text"
+                    aria-label="Modifier la tâche"
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     onBlur={() => saveEdit(todo.id)}
@@ -116,6 +126,7 @@ function SortableItem({
                     {!editingId && (
                         <button
                             className="action-btn edit-btn"
+                            aria-label="Modifier la tâche"
                             onClick={() => startEditing(todo)}
                             title="Edit task"
                         >
@@ -127,6 +138,7 @@ function SortableItem({
                     )}
                     <button
                         className="action-btn delete-btn"
+                        aria-label="Supprimer la tâche"
                         onClick={() => deleteTodo(todo.id)}
                         title="Delete task"
                     >
@@ -499,6 +511,7 @@ export default function App() {
                             <input
                                 type="text"
                                 placeholder="Quelle tâche ajouter ?"
+                                aria-label="Nouvelle tâche"
                                 value={newTodo}
                                 onChange={(e) => setNewTodo(e.target.value)}
                             />

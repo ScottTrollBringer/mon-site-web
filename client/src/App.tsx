@@ -443,66 +443,43 @@ export default function App() {
                 )}
             </Helmet>
 
-            <div className="user-header">
-                {auth ? (
-                    <>
-                        <span>👤 <strong>{auth.user?.username || 'Utilisateur'}</strong> ({auth.user?.role || 'user'})</span>
-                        <span className="logout-link" onClick={handleLogout}>Déconnexion</span>
-                    </>
-                ) : (
-                    <span className="login-link" onClick={() => setShowAuth(true)}>🔑 Connexion</span>
-                )}
-            </div>
+            
 
-            {showAuth && (
+                        {showAuth && (
                 <div className="modal-overlay">
                     <Auth onLogin={handleLogin} onCancel={() => setShowAuth(false)} />
                 </div>
             )}
 
-            <h1>Praetor Scott</h1>
+            <nav className="top-navbar">
+                <div className="navbar-brand">
+                    <h2>Praetor Scott</h2>
+                </div>
+                
+                <div className="navbar-links">
+                    <button className={`nav-link ${currentView === 'blog' ? 'active' : ''}`} onClick={() => setCurrentView('blog')}>Blog</button>
+                    {isAdmin && <button className={`nav-link ${currentView === 'todos' ? 'active' : ''}`} onClick={() => setCurrentView('todos')}>Tâches</button>}
+                    <button className={`nav-link ${currentView === 'videogames' ? 'active' : ''}`} onClick={() => setCurrentView('videogames')}>Jeux vidéo</button>
+                    <button className={`nav-link ${currentView === 'gameranking' ? 'active' : ''}`} onClick={() => setCurrentView('gameranking')}>Classement</button>
+                    <button className={`nav-link ${currentView === 'gallery' ? 'active' : ''}`} onClick={() => setCurrentView('gallery')}>Galerie</button>
+                    <button className={`nav-link ${currentView === 'painting' ? 'active' : ''}`} onClick={() => setCurrentView('painting')}>Peinture</button>
+                </div>
 
-            <div className="nav-tabs">
-                <button
-                    className={`nav-btn ${currentView === 'blog' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('blog')}
-                >
-                    Blog
-                </button>
-                {isAdmin && (
-                    <button
-                        className={`nav-btn ${currentView === 'todos' ? 'active' : ''}`}
-                        onClick={() => setCurrentView('todos')}
-                    >
-                        Tâches
-                    </button>
-                )}
-                <button
-                    className={`nav-btn ${currentView === 'videogames' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('videogames')}
-                >
-                    Wishlist jeux vidéo
-                </button>
-                <button
-                    className={`nav-btn ${currentView === 'gallery' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('gallery')}
-                >
-                    Galerie
-                </button>
-                <button
-                    className={`nav-btn ${currentView === 'gameranking' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('gameranking')}
-                >
-                    Classement jeux vidéo
-                </button>
-                <button
-                    className={`nav-btn ${currentView === 'painting' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('painting')}
-                >
-                    Projets de peinture
-                </button>
+                <div className="navbar-user">
+                    {auth ? (
+                        <>
+                            <span className="user-info">👤 <strong>{auth.user?.username || 'Utilisateur'}</strong></span>
+                            <span className="logout-link" onClick={handleLogout} style={{cursor:'pointer', textDecoration:'underline'}}>Déconnexion</span>
+                        </>
+                    ) : (
+                        <span className="login-link" onClick={() => setShowAuth(true)} style={{cursor:'pointer'}}>🔑 Connexion</span>
+                    )}
+                </div>
+            </nav>
+            
+            <main className="main-content">
 
-            </div>
+            
 
             {currentView === 'todos' ? (
                 <>
@@ -609,6 +586,7 @@ export default function App() {
             ) : (
                 <Blog authToken={auth?.token || ''} onAuthError={handleLogout} userRole={auth?.user?.role || 'user'} />
             )}
+            </main>
         </div>
     );
 }
